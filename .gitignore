@@ -1,0 +1,24 @@
+# Сборка Maven
+target/
+
+# Отчёты Allure (самое важное)
+.allure/
+allure-results/
+
+# Логи
+*.log
+logs/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+
+# Секреты
+application-local.properties
+secret.key
+config.json
+*-local.properties
