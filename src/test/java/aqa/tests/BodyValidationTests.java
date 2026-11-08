@@ -6,10 +6,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import aqa.client.BaseRequest;
+import aqa.data.TokenGenerator;
+import io.qameta.allure.Epic;
 import io.qameta.allure.Severity;
 import io.qameta.allure.SeverityLevel;
 import io.qameta.allure.Step;
 
+@Epic("Тело запроса") 
 public class BodyValidationTests extends BaseTest{
 
     record BodyScenario(String description, String token, String action) {
@@ -25,10 +28,11 @@ public class BodyValidationTests extends BaseTest{
             new BodyScenario("Пустые token и action", "", ""),
             new BodyScenario("token отсутствует, action есть", null, "LOGIN"),
             new BodyScenario("token есть, action отсутствует", newToken(), null),
-            new BodyScenario("token короче на 1 символ", newToken().substring(0, 31), "LOGIN"),
-            new BodyScenario("token длиннее на 1 символ", newToken() + "1",         "LOGIN"),
-            new BodyScenario("token с недопустимым символом '/'",newToken().substring(0, 31) + "/", "LOGIN"),
-            new BodyScenario("token с недопустимым символом ':'", newToken().substring(0, 31) + ":", "LOGIN"),
+            new BodyScenario("token короче на 1 символ", newToken().substring(0, tokenLength - 1), "LOGIN"),
+            new BodyScenario("token длиннее на 1 символ", newToken() + "1", "LOGIN"),
+            new BodyScenario("token с символами A-Z 0-9", TokenGenerator.invalidToken(), "LOGIN"),
+            new BodyScenario("token с недопустимым символом '/'",newToken().substring(0, tokenLength - 1) + "/", "LOGIN"),
+            new BodyScenario("token с недопустимым символом ':'", newToken().substring(0, tokenLength - 1) + ":", "LOGIN"),
             new BodyScenario("Неизвестный action LOGINN", newToken(), "LOGINN"),
             new BodyScenario("action в нижнем регистре 'login'", newToken(), "login"),
             new BodyScenario("action с опечаткой 'Loguot'", newToken(), "Loguot"),
@@ -38,13 +42,13 @@ public class BodyValidationTests extends BaseTest{
         );
     }
 
-    @DisplayName("Невалидное тело запроса должно отклоняться. Данные: ")
+    @DisplayName("Невалидное тело запроса должно отклоняться. ")
     @Severity(SeverityLevel.CRITICAL)
     @ParameterizedTest(name = "{0}")
     @MethodSource("bodyScenarios")
     void invalidBodyIsRejected(BodyScenario scenario) {
         sendRequest(scenario.token, scenario.action, 400);
-        checkMock(auth, 0);
+        checkRequestInMock(auth, 0);
     }
 
     @Test
@@ -52,7 +56,7 @@ public class BodyValidationTests extends BaseTest{
     @Severity(SeverityLevel.CRITICAL)
     void validBodyIsAccepted() {
         sendRequest(newToken(), "LOGIN", 200);
-        checkMock(auth, 1);
+        checkRequestInMock(auth, 1);
     }
 
     @Step("Отправляем запрос, ожидаем статус {expectedCode}")

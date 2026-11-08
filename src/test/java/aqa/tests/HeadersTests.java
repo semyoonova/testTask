@@ -5,12 +5,11 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.stream.Stream;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
+import io.qameta.allure.Epic;
 import io.qameta.allure.Severity;
 import io.qameta.allure.SeverityLevel;
 import io.restassured.specification.RequestSpecification;
@@ -18,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import aqa.client.BaseRequest;
 import aqa.enums.ActionType;
 
+@Epic("Заголовки запроса") 
 public class HeadersTests extends BaseTest{
 
     public record TestScenario(String description, String contentType, String apiKey, String accept, int expectedStatusCode, int numOfRequestsInMock) {
@@ -30,7 +30,7 @@ public class HeadersTests extends BaseTest{
     static Stream<TestScenario> headerScenarios() {
         return Stream.of(
             new TestScenario("некорректный Content-Type — отклоняется",
-                "text/plain", apiKey, accept, 500, 0),
+                incorrectContentType, apiKey, accept, 500, 0),
             new TestScenario("без X-Api-Key — отклоняется",
                 contentType, null, accept, 401, 0),
             new TestScenario("пустой X-Api-Key — отклоняется",
@@ -65,7 +65,7 @@ public class HeadersTests extends BaseTest{
             .then()
             .statusCode(scenario.expectedStatusCode());
         
-            checkMock(auth, scenario.numOfRequestsInMock);
+            checkRequestInMock(auth, scenario.numOfRequestsInMock);
     }
 
     @Test
@@ -86,7 +86,7 @@ public class HeadersTests extends BaseTest{
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
     assertEquals(500, response.statusCode());
-    checkMock(auth, 0);
+    checkRequestInMock(auth, 0);
     }
     
     @Test
@@ -95,6 +95,6 @@ public class HeadersTests extends BaseTest{
     void correctRequest(){
         var token = newToken();
         doActionType(token, ActionType.LOGIN, 200);
-        checkMock(auth);
+        checkRequestInMock(auth);
     }
 }

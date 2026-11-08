@@ -5,10 +5,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import aqa.enums.ActionType;
+import io.qameta.allure.Epic;
 import io.qameta.allure.Severity;
 import io.qameta.allure.SeverityLevel;
 import io.qameta.allure.Story;
 
+@Epic("Пользовательские сценарии") 
 public class UserFlowTests extends BaseTest{
 
     @DisplayName("Неавторизованный пользователь: возвращает 403 при вызове")
@@ -61,10 +63,10 @@ public class UserFlowTests extends BaseTest{
     void repeatedActionInSameSessionSucceeds(){
         var token = newToken();
         doActionType(token, ActionType.LOGIN, 200);
-        checkMock(auth);
+        checkRequestInMock(auth);
         doActionType(token, ActionType.ACTION, 200);
-        checkMock(doAction);
+        checkRequestInMock(doAction);
         doActionType(token, ActionType.ACTION, 200); 
-        checkMock(doAction); 
+        checkRequestInMock(doAction); 
     }
 }

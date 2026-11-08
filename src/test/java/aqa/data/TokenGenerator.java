@@ -21,6 +21,10 @@ public final class TokenGenerator {
     }
 
     public static String validToken() {
-        return generate(HEX, Integer.parseInt(Config.get("tokenLength")));
+        return generate(HEX, Config.getInt("tokenLength"));
+    }
+
+    public static String invalidToken() {
+        return generate(ALPHANUMERIC, Config.getInt("tokenLength"));
     }
 }

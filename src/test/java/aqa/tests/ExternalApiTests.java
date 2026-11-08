@@ -5,9 +5,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import aqa.enums.ActionType;
+import io.qameta.allure.Epic;
+import io.qameta.allure.Step;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 
+@Epic("Внешний сервис") 
 public class ExternalApiTests extends BaseTest{
     
     @DisplayName("Если внешний сервис при обращении вернул ошибку вход не выполняется и токен не сохраняется")
@@ -18,10 +21,10 @@ public class ExternalApiTests extends BaseTest{
         var token = newToken();
 
         doActionType(token, ActionType.LOGIN, 500);
-        checkMock(auth);
+        checkRequestInMock(auth);
 
         doActionType(token, ActionType.ACTION, 403);
-        checkMock(doAction, 0);
+        checkRequestInMock(doAction, 0);
     }
 
     @DisplayName("Если внешний сервис при обращении к /doAction после авторизации вернул ошибку токен сохраняется")
@@ -32,13 +35,13 @@ public class ExternalApiTests extends BaseTest{
         var token = newToken();
 
         doActionType(token, ActionType.LOGIN, 200);
-        checkMock(auth);
+        checkRequestInMock(auth);
         
         doActionType(token, ActionType.ACTION, 500);
-        checkMock(doAction);
+        checkRequestInMock(doAction);
 
         doActionType(token, ActionType.LOGIN, 409);
-        checkMock(auth, 1);
+        checkRequestInMock(auth, 1);
     }
 
     @DisplayName("Если внешний сервис вернул код в диапазоне от 200 до 400 запрос возвращает код 200")
@@ -50,11 +53,11 @@ public class ExternalApiTests extends BaseTest{
         var token = newToken();
         doActionType(token, ActionType.LOGIN, 200);
 
-        checkMock(auth);
+        checkRequestInMock(auth);
 
         doActionType(token, ActionType.ACTION, 200);
 
-        checkMock(doAction);
+        checkRequestInMock(doAction);
     }
 
     @Test
@@ -64,20 +67,26 @@ public class ExternalApiTests extends BaseTest{
         var token = newToken();
         doActionType(token, ActionType.LOGIN, 200);
 
-        verify(postRequestedFor(urlEqualTo(auth))
-            .withHeader("Content-Type", equalTo("application/x-www-form-urlencoded"))
-            .withHeader("Accept", equalTo("application/json")));
-
-        verify(postRequestedFor(urlEqualTo(auth))
-            .withRequestBody(equalTo("token=" + token)));
+        checkRequestHeadersInMock(auth, "Content-Type", contentType);
+        checkRequestHeadersInMock(auth, "Accept", accept);
+        checkRequestBodyInMock(auth, token);
 
         doActionType(token, ActionType.ACTION, 200);
 
-        verify(postRequestedFor(urlEqualTo(doAction))
-            .withHeader("Content-Type", equalTo("application/x-www-form-urlencoded"))
-            .withHeader("Accept", equalTo("application/json")));
+        checkRequestHeadersInMock(doAction, "Content-Type", contentType);
+        checkRequestHeadersInMock(doAction, "Accept", accept);
+        checkRequestBodyInMock(doAction, token);
+    }
 
-        verify(postRequestedFor(urlEqualTo(doAction))
+    @Step("Проверяем появление запроса в журнале мока {endpoint} и заголовок {header}")
+    private void checkRequestHeadersInMock(String endpoint, String header, String expectedValue){
+        verify(postRequestedFor(urlEqualTo(endpoint))
+            .withHeader(header, equalTo(expectedValue)));
+    }
+
+    @Step("Проверяем тело запроса в журнале мока {endpoint} и заголовки {}")
+    private void checkRequestBodyInMock(String endpoint, String token){
+        verify(postRequestedFor(urlEqualTo(endpoint))
             .withRequestBody(equalTo("token=" + token)));
     }
 }

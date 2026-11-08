@@ -10,10 +10,10 @@ import aqa.client.BaseRequest;
 import aqa.config.Config;
 import aqa.data.TokenGenerator;
 import aqa.enums.ActionType;
+import io.qameta.allure.Allure;
 import io.qameta.allure.Step;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
-
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
@@ -29,26 +29,32 @@ abstract class BaseTest {
     protected static final String apiKey = Config.get("apiKey");
     protected static final String accept = Config.get("accept");
     protected static final String contentType = Config.get("contentType");
+    protected static final String incorrectContentType = Config.get("incorrectContentType");
     protected static final String baseUri = Config.get("baseUri");
+    protected static final int tokenLength = Config.getInt("tokenLength");
     protected static final List<String> usedTokens = new ArrayList<>();
 
     @BeforeAll
     static void aq(){
-        await().atMost(10, java.util.concurrent.TimeUnit.SECONDS)
-        .pollInterval(500, java.util.concurrent.TimeUnit.MILLISECONDS)
-        .until(() -> {
-            try (SocketChannel sc = SocketChannel.open()) {
-                return sc.connect(new InetSocketAddress("localhost", 8080)); // твой порт
-            } catch (Exception e) {
-                return false;
-            }
+        Allure.step("Запуск приложения", () -> {
+            await().atMost(10, java.util.concurrent.TimeUnit.SECONDS)
+            .pollInterval(500, java.util.concurrent.TimeUnit.MILLISECONDS)
+            .until(() -> {
+                try (SocketChannel sc = SocketChannel.open()) {
+                    return sc.connect(new InetSocketAddress("localhost", 8080));
+                } catch (Exception e) {
+                    return false;
+                }
+            });
         });
     }
 
     @BeforeEach 
     void setUpMock(){
-        stubFor(post(Config.get("authEndpoint")).willReturn(ok()));
-        stubFor(post(Config.get("doActionEndpoint")).willReturn(ok()));
+        Allure.step("Настройка мока", () -> {
+            stubFor(post(Config.get("authEndpoint")).willReturn(ok()));
+            stubFor(post(Config.get("doActionEndpoint")).willReturn(ok()));
+        });
     }
 
     protected static String newToken(){
@@ -57,25 +63,27 @@ abstract class BaseTest {
         return token;
     }
 
-    @AfterEach 
+    @AfterEach
     void logoutUsedTokens(){
-        usedTokens.forEach(token -> {
-            new BaseRequest().baseRequest(token, ActionType.LOGOUT)
-            .when()
-            .post(endpoint)
-            .thenReturn();
+        Allure.step("Отчистка токена из памяти", () -> {
+            usedTokens.forEach(token -> {
+                new BaseRequest().baseRequest(token, ActionType.LOGOUT)
+                .when()
+                .post(endpoint)
+                .thenReturn();
+            });
         });
 
         usedTokens.clear();
     }
 
     @Step("Проверяем появление запроса в журнале мока {path}")
-    protected void checkMock(String path){
+    protected void checkRequestInMock(String path){
         verify(postRequestedFor(urlEqualTo(path)));
     }
 
     @Step("Проверяем появление запроса в журнале мока {path} ровно {times} раз")
-    protected void checkMock(String path, int times){
+    protected void checkRequestInMock(String path, int times){
         verify(exactly(times), postRequestedFor(urlEqualTo(path)));
     }
 
